@@ -155,6 +155,7 @@ function _M.http_init_worker()
     apisix_upstream.init_worker()
     require("apisix.plugins.ext-plugin.init").init_worker()
 
+    control_api_router.init_worker()
     local_conf = core.config.local_conf()
 
     if local_conf.apisix and local_conf.apisix.enable_server_tokens == false then
@@ -575,6 +576,11 @@ end
 
 
 function _M.http_access_phase()
+    -- from HTTP/3 to HTTP/1.1 we need to convert :authority pesudo-header
+    -- to Host header, so we set upstream_host variable here.
+    if ngx.req.http_version() == 3 then
+        ngx.var.upstream_host = ngx.var.host .. ":" .. ngx.var.server_port
+    end
     local ngx_ctx = ngx.ctx
 
     -- always fetch table from the table pool, we don't need a reused api_ctx

@@ -61,6 +61,8 @@ description: OpenID Connect allows the client to obtain user information from th
 | set_refresh_token_header             | boolean  | False    | false                 |              | When set to true and a refresh token object is available, sets it in the `X-Refresh-Token` request header.                                                                                                                            |
 | session                              | object   | False    |                       |              | When bearer_only is set to false, openid-connect will use Authorization Code flow to authenticate on the IDP, so you need to set the session-related configuration.                                                                   |
 | session.secret                       | string   | True     | Automatic generation  | 16 or more characters | The key used for session encrypt and HMAC operation.                                                                                                                                                                                  |
+| session.cookie                       | object   | False    |                       |             |                                                                                                                                                                                  |
+| session.cookie.lifetime              | integer   | False    | 3600                  |             | Cookie lifetime in seconds. |
 | unauth_action                        | string   | False    | "auth"                |  ["auth","deny","pass"]            | Specify the response type on unauthenticated requests. "auth" redirects to identity provider, "deny" results in a 401 response, "pass" will allow the request without authentication.                                                 |
 | proxy_opts                           | object   | False    |                       |                                  | HTTP proxy that the OpenID provider is behind.                                                                                                                                                                                  |
 | proxy_opts.http_proxy     | string   | False    |                       | http://proxy-server:port         | HTTP proxy server address.                                                                                                                                                                                                            |
@@ -245,7 +247,7 @@ You should also ensure that the `redirect_uri` include the scheme, such as `http
 
 #### 2. Missing Session Secret
 
-If you deploy APISIX in the [standalone mode](/apisix/production/deployment-modes#standalone-mode), make sure that `session.secret` is configured.
+If you deploy APISIX in the [standalone mode](../deployment-modes.md#standalone), make sure that `session.secret` is configured.
 
 User sessions are stored in browser as cookies and encrypted with session secret. The secret is automatically generated and saved to etcd if no secret is configured through the `session.secret` attribute. However, in standalone mode, etcd is no longer the configuration center. Therefore, you should explicitly configure `session.secret` for this plugin in the YAML configuration center `apisix.yaml`.
 

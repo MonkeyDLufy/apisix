@@ -14,36 +14,36 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 --
-local core = require("apisix.core")
-local ngx = ngx
+local redis_cluster     = require("apisix.utils.rediscluster")
+local setmetatable      = setmetatable
+local util              = require("apisix.plugins.limit-req.util")
+
+local _M = {version = 0.1}
 
 
-local _M = {}
-local page_500 = [[<!DOCTYPE html>
-<html>
-<head>
-<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-<meta content="utf-8" http-equiv="encoding">
-<title>500 Internal Server Error</title>
-<style>
-    body {
-        width: 35em;
-        margin: 0 auto;
-        font-family: Tahoma, Verdana, Arial, sans-serif;
+local mt = {
+    __index = _M
+}
+
+
+function _M.new(plugin_name, conf, rate, burst)
+    local red_cli, err = redis_cluster.new(conf, "plugin-limit-req-redis-cluster-slot-lock")
+    if not red_cli then
+        return nil, err
+    end
+    local self = {
+        conf = conf,
+        plugin_name = plugin_name,
+        burst = burst * 1000,
+        rate = rate * 1000,
+        red_cli = red_cli,
     }
-</style>
-</head>
-<body>
-<h1>An error occurred.</h1>
-<p>You can report issue to <a href="https://github.com/apache/apisix/issues">APISIX</a></p>
-<p><em>Faithfully yours, <a href="https://apisix.apache.org/">APISIX</a>.</em></p>
-</body>
-</html>]]
+    return setmetatable(self, mt)
+end
 
 
-function _M.handle_500()
-    core.response.set_header("Content-Type", "text/html")
-    ngx.say(page_500)
+function _M.incoming(self, key, commit)
+    return util.incoming(self, self.red_cli, key, commit)
 end
 
 

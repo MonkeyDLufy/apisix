@@ -379,7 +379,8 @@ Please modify "admin_key" in conf/config.yaml .
 
     local ip_port_to_check = {}
 
-    local function listen_table_insert(listen_table, scheme, ip, port, enable_http2, enable_ipv6)
+    local function listen_table_insert(listen_table, scheme, ip, port,
+                                enable_http3, enable_ipv6)
         if type(ip) ~= "string" then
             util.die(scheme, " listen ip format error, must be string", "\n")
         end
@@ -397,7 +398,11 @@ Please modify "admin_key" in conf/config.yaml .
 
         if ip_port_to_check[addr] == nil then
             table_insert(listen_table,
-                    {ip = ip, port = port, enable_http2 = enable_http2})
+                    {
+                        ip = ip,
+                        port = port,
+                        enable_http3 = enable_http3
+                    })
             ip_port_to_check[addr] = scheme
         end
 
@@ -407,7 +412,11 @@ Please modify "admin_key" in conf/config.yaml .
 
             if ip_port_to_check[addr] == nil then
                 table_insert(listen_table,
-                        {ip = ip, port = port, enable_http2 = enable_http2})
+                        {
+                            ip = ip,
+                            port = port,
+                            enable_http3 = enable_http3
+                        })
                 ip_port_to_check[addr] = scheme
             end
         end
@@ -440,17 +449,20 @@ Please modify "admin_key" in conf/config.yaml .
                     port = 9080
                 end
 
-                if enable_http2 == nil then
-                    enable_http2 = false
+                if enable_http2 ~= nil then
+                    util.die("ERROR: port level enable_http2 in node_listen is deprecated"
+                            .. "from 3.9 version, and you should use enable_http2 in "
+                            .. "apisix level.", "\n")
                 end
 
                 listen_table_insert(node_listen, "http", ip, port,
-                        enable_http2, enable_ipv6)
+                        false, enable_ipv6)
             end
         end
     end
     yaml_conf.apisix.node_listen = node_listen
 
+    local enable_http3_in_server_context = false
     local ssl_listen = {}
     -- listen in https, support multiple ports, support specific IP
     for _, value in ipairs(yaml_conf.apisix.ssl.listen) do
@@ -458,6 +470,7 @@ Please modify "admin_key" in conf/config.yaml .
         local port = value.port
         local enable_ipv6 = false
         local enable_http2 = value.enable_http2
+        local enable_http3 = value.enable_http3
 
         if ip == nil then
             ip = "0.0.0.0"
@@ -470,15 +483,26 @@ Please modify "admin_key" in conf/config.yaml .
             port = 9443
         end
 
-        if enable_http2 == nil then
-            enable_http2 = false
+        if enable_http2 ~= nil then
+            util.die("ERROR: port level enable_http2 in ssl.listen is deprecated"
+                      .. "from 3.9 version, and you should use enable_http2 in "
+                      .. "apisix level.", "\n")
+        end
+
+        if enable_http3 == nil then
+            enable_http3 = false
+        end
+        if enable_http3 == true then
+            enable_http3_in_server_context = true
         end
 
         listen_table_insert(ssl_listen, "https", ip, port,
-                enable_http2, enable_ipv6)
+                enable_http3, enable_ipv6)
     end
 
     yaml_conf.apisix.ssl.listen = ssl_listen
+    yaml_conf.apisix.enable_http3_in_server_context = enable_http3_in_server_context
+
 
     if yaml_conf.apisix.ssl.ssl_trusted_certificate ~= nil then
         local cert_path = yaml_conf.apisix.ssl.ssl_trusted_certificate

@@ -60,6 +60,8 @@ description: OpenID Connect（OIDC）是基于 OAuth 2.0 的身份认证协议�
 | set_refresh_token_header             | boolean | 否     | false                 |               | 当设置为 `true` 并且刷新令牌可用时，则会将该属性设置在`X-Refresh-Token`请求头中。                      |
 | session                              | object  | 否     |                       |               | 当设置 bearer_only 为 false 时，openid-connect 插件将使用 Authorization Code 在 IDP 上进行认证，因此你必须设置 session 相关设置。 |
 | session.secret                       | string  | 是     | 自动生成               | 16 个以上字符  | 用于 session 加密和 HMAC 计算的密钥。 |
+| session.cookie                       | object   | False    |                       |             |                                                                                                                                                                                                                                                                                                                                 |
+| session.cookie.lifetime              | integer   | False    | 3600                  |             | 用于设置 cookie 的生命周期，以秒为单位。  |
 | unauth_action                        | string   | False    | "auth"                |  ["auth","deny","pass"]            | 指定未经身份验证的请求的响应类型。 `auth` 重定向到身份提供者，`deny` 导致 401 响应，`pass` 将允许请求而无需身份验证。                                                |
 | proxy_opts                           | object  | 否    |                     |               | OpenID 服务器前面的 HTTP 代理服务器。 |
 | proxy_opts                           | object  | 否    |                       |                                  | 用来访问身份认证服务器的代理服务器。                                                                                             |
@@ -244,7 +246,7 @@ the error request to the redirect_uri path, but there's no session state found
 
 #### 2. 缺少 Session Secret
 
-如果您在[standalone 模式](/apisix/product/deployment-modes#standalone-mode)下部署 APISIX，请确保配置了 `session.secret`。
+如果您在[standalone 模式](../../../en/latest/deployment-modes.md#standalone)下部署 APISIX，请确保配置了 `session.secret`。
 
 用户 session 作为 cookie 存储在浏览器中，并使用 session 密钥进行加密。如果没有通过 `session.secret` 属性配置机密，则会自动生成机密并将其保存到 etcd。然而，在独立模式下，etcd 不再是配置中心。因此，您应该在 YAML 配置中心 `apisix.yaml` 中为此插件显式配置 `session.secret`。
 
